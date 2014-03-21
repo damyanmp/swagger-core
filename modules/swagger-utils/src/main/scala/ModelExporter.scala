@@ -26,7 +26,9 @@ object ModelExporter {
     }).flatten.toList
     if(args.length > 1) {
       val writer = new PrintWriter(args(1), "UTF-8")
-      models.map(m => {writer.println(JsonSerializer.asJson(m))})
+      val jsons = models.map(m => (m.id, m)).toMap
+
+      writer.println(JsonSerializer.asJson(jsons))
       writer.close()
     }
     else models.map(m => {println(JsonSerializer.asJson(m))})
