@@ -16,4 +16,6 @@ export CLASSPATH=$(cat classpath.txt)
 
 scala -cp $CLASSPATH ModelExporter $1 out.txt
 
-node ./src/main/js/extractModels.js $@
+node ./src/main/js/extractModels.js $@ > output.yml
+
+cat output.yml
