@@ -18,4 +18,6 @@ class DefaultTokenCache extends TokenCache {
   def getRequestId(requestId: String): Map[String, Option[String]] = requestCache(requestId)
   def addRequestId(requestId: String, requestMap: Map[String, Option[String]]) = requestCache += requestId -> requestMap
   def removeRequestId(requestId: String) = requestCache.remove(requestId)
+
+  def allowAnonymousTokens(): Boolean = true
 }

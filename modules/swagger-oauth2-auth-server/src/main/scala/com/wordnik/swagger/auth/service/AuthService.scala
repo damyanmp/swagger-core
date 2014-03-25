@@ -54,6 +54,7 @@ class AuthService extends TokenStore {
     val clientId = request.getParameter("client_id")
     val accept = request.getParameter("accept")
     val requestId = request.getParameter("request_id")
+    val responseType = request.getParameter("response_type")
 
     LOGGER.debug("logging in user " + username + ", accept=" + accept)
 
@@ -89,8 +90,8 @@ class AuthService extends TokenStore {
                 case i: Int => redirectUri + "?"
               })
             }
-            val code = exchangeRequestIdForCode(clientId)
-            val token = UserTokenResponse(3600, code, 1)
+            val code = exchangeRequestIdForCode(requestId)
+            val token = UserTokenResponse(3600, code, 0)
             addAccessCode(code, TokenWrapper(new Date, token))
             LOGGER.debug("redirecting to " + redirectTo + "code=" + code)
             response.sendRedirect(redirectTo + "code=" + code)
@@ -101,9 +102,10 @@ class AuthService extends TokenStore {
           }
         }
         else {
+          // should this actually exist?
           LOGGER.debug("no request id, generating access token")
           val accessToken = generateAccessToken()
-          val token = UserTokenResponse(3600, accessToken, 1)
+          val token = UserTokenResponse(3600, accessToken, 0)
           addAccessCode(accessToken, TokenWrapper(new Date, token))
 
           val redirectTo = {
@@ -154,15 +156,23 @@ class AuthService extends TokenStore {
       if(validator.isValidClient(clientId, clientSecret)) {
         if("authorization_code" == grantType) {
           LOGGER.debug("grant type is " + grantType)
-          if(hasAccessCode(code)){
-            throw new Exception("invalid code supplied")
+          val validCode = hasAccessCode(code)
+
+          if(validCode) {
+            removeAccessCode(code)
+            val accessToken = generateAccessToken()
+            val token = UserTokenResponse(3600, accessToken, 0)
+            addAccessCode(accessToken, TokenWrapper(new Date, token))
+            token
           }
-          else {
+          else if(allowAnonymousTokens()) {
             val accessToken = generateAccessToken()
             val token = AnonymousTokenResponse(3600, accessToken)
             addAccessCode(accessToken, TokenWrapper(new Date, token))
             token
           }
+          else
+            throw new Exception("invalid code supplied")
         }
         else {
           LOGGER.debug("unsupported grant type " + grantType)
@@ -182,6 +192,8 @@ class AuthService extends TokenStore {
   }
 
   def authorize(request: HttpServletRequest,response: HttpServletResponse): ApiResponseMessage = {
+    import scala.collection.JavaConverters._
+
     var oauthRequest: OAuthAuthzRequest = null;
     try {
       oauthRequest = new OAuthAuthzRequest(request)
@@ -194,11 +206,11 @@ class AuthService extends TokenStore {
         val requestMap = Map(
           OAuth.OAUTH_STATE -> Option(oauthRequest.getParam(OAuth.OAUTH_STATE)),
           OAuth.OAUTH_REDIRECT_URI -> Option(oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI)),
-          OAuth.OAUTH_CLIENT_ID -> Option(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID)))
+          OAuth.OAUTH_CLIENT_ID -> Option(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID)),
+          OAuth.OAUTH_SCOPE -> Option(oauthRequest.getParam(OAuth.OAUTH_SCOPE)))
 
         val requestId = generateRequestId(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID))
         addRequestId(requestId, requestMap)
-
         val dialogClass = Option(request.getSession.getServletContext.getInitParameter("DialogImplementation")).getOrElse({
           LOGGER.warn("using default dialog implementation")
           "com.wordnik.swagger.auth.service.DefaultAuthDialog"
@@ -207,7 +219,8 @@ class AuthService extends TokenStore {
         // write the dialog UI
         dialog.show(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID),
           request.getRequestURI,
-          "scope",
+          "scopes",
+          ResponseType.CODE.toString(),
           Option(requestId))
       }
       else if (responseType.equals(ResponseType.TOKEN.toString())) {

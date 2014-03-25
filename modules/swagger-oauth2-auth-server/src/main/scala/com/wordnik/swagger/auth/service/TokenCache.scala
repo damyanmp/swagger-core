@@ -17,6 +17,8 @@ trait TokenCache {
   def getRequestId(requestId: String): Map[String, Option[String]]
   def addRequestId(requestId: String, requestMap: Map[String, Option[String]])
   def removeRequestId(requestId: String)
+
+  def allowAnonymousTokens(): Boolean
 }
 
 object TokenFactory {
@@ -46,6 +48,8 @@ trait TokenStore {
   def generateCode(clientId: String) = TokenGenerator.generateRandomCode("code", clientId)
 
   def generateAccessToken() = TokenGenerator.generateAccessToken()
+
+  def allowAnonymousTokens(): Boolean = TokenFactory().allowAnonymousTokens()
 }
 
 object TokenGenerator {
