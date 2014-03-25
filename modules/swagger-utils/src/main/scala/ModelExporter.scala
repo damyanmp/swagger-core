@@ -16,12 +16,17 @@ object ModelExporter {
       case _ => "com.wordnik"
     }
     val models = (for(model <- classesForPackage(packageName)) yield {
-      ModelConverters.read(model) match {
-        case Some(model) => {
-          if(model.name.indexOf("$") == -1) Some(model)
-          else None
+      try{
+        ModelConverters.read(model) match {
+          case Some(model) => {
+            if(model.name.indexOf("$") == -1) Some(model)
+            else None
+          }
+          case _ => None
         }
-        case _ => None
+      }
+      catch {
+        case e: Exception => None
       }
     }).flatten.toList
     if(args.length > 1) {
