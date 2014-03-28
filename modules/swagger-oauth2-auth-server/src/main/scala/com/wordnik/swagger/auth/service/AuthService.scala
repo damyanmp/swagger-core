@@ -82,7 +82,10 @@ class AuthService extends TokenStore {
           LOGGER.debug("username " + username + " has request id=" + requestId)
           if(hasRequestId(requestId)) {
             LOGGER.debug("token for requestId " + requestId + " found")
-            val requestToken = getRequestId(requestId)
+            // now that we have the username, save it in the hash
+            val requestToken = getRequestId(requestId) ++ Map("username" -> Some(username))
+            addRequestId(requestId, requestToken)
+
             val redirectUri = requestToken(OAuth.OAUTH_REDIRECT_URI ).get
             val redirectTo = {
               (redirectUri.indexOf("?") match {
@@ -218,35 +221,10 @@ class AuthService extends TokenStore {
         val dialog = SwaggerContext.loadClass(dialogClass).newInstance.asInstanceOf[AuthDialog]
         // write the dialog UI
         dialog.show(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID),
-          request.getRequestURI,
-          "scopes",
+          oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI),
+          oauthRequest.getParam(OAuth.OAUTH_SCOPE),
           ResponseType.CODE.toString(),
           Option(requestId))
-      }
-      else if (responseType.equals(ResponseType.TOKEN.toString())) {
-        // client ID is required!
-        if(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID) == null) {
-          ApiResponseMessage(HttpServletResponse.SC_BAD_REQUEST, "client_id not found")
-        }
-        else {
-          val sb = new StringBuilder()
-          try{
-            sb.append(OAuth.OAUTH_CLIENT_ID).append("=").append(URLEncoder.encode(oauthRequest.getParam(OAuth.OAUTH_CLIENT_ID), "UTF-8")).append("&")
-            if(oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI) != null)
-              sb.append(OAuth.OAUTH_REDIRECT_URI).append("=").append(URLEncoder.encode(oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI), "UTF-8")).append("&")
-            if(oauthRequest.getParam(OAuth.OAUTH_RESPONSE_TYPE) != null)
-              sb.append(OAuth.OAUTH_RESPONSE_TYPE).append("=").append(URLEncoder.encode(oauthRequest.getParam(OAuth.OAUTH_RESPONSE_TYPE), "UTF-8")).append("&")
-            if(oauthRequest.getParam(OAuth.OAUTH_STATE) != null)
-              sb.append(OAuth.OAUTH_STATE).append("=").append(URLEncoder.encode(oauthRequest.getParam(OAuth.OAUTH_STATE), "UTF-8")).append("&")
-            if(oauthRequest.getParam(OAuth.OAUTH_SCOPE) != null)
-              sb.append(OAuth.OAUTH_SCOPE).append("=").append(URLEncoder.encode(oauthRequest.getParam(OAuth.OAUTH_SCOPE), "UTF-8"))
-          }
-          catch {
-            case e: Exception => e.printStackTrace()
-          }
-          val redirectURI = new URI("/foo?" + sb.toString())
-          ApiResponseMessage(307, redirectURI.toString)
-        }
       }
       else {
         val redirectURI = oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI)
