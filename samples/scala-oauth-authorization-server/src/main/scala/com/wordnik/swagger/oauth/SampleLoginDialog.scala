@@ -17,7 +17,7 @@ class DefaultAuthDialog extends AuthDialog with TokenStore {
    * is 'localhost' and provide an AnonymousTokenRequest, which is good for 3600
    * seconds
    */
-  def show(clientId: String, redirectUri: String, scope: String, requestId: Option[String]) = {
+  def show(clientId: String, redirectUri: String, scope: String, responseType: String, requestId: Option[String]) = {
     val html = 
 <html class="js placeholder">
   <head>
