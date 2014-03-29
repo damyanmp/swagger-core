@@ -6,8 +6,8 @@ import com.wordnik.swagger.jersey.listing.JerseyResourceListingProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 
 public class Application extends ResourceConfig {
-
   public Application() {
+    packages("com.wordnik.swagger.jaxrs.json").
     packages("com.wordnik.swagger.sample.resource").
     packages("com.wordnik.swagger.sample.util").
     register(ApiListingResourceJSON.class).

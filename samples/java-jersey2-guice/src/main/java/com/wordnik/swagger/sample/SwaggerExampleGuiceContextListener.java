@@ -12,12 +12,7 @@ import com.wordnik.swagger.config.SwaggerConfig;
 import com.wordnik.swagger.jaxrs.config.DefaultJaxrsScanner;
 import com.wordnik.swagger.jaxrs.config.ReflectiveJaxrsScanner;
 import com.wordnik.swagger.jaxrs.reader.DefaultJaxrsApiReader;
-import com.wordnik.swagger.model.ApiInfo;
-import com.wordnik.swagger.model.AuthorizationType;
-import com.wordnik.swagger.model.GrantType;
-import com.wordnik.swagger.model.ImplicitGrant;
-import com.wordnik.swagger.model.LoginEndpoint;
-import com.wordnik.swagger.model.OAuthBuilder;
+import com.wordnik.swagger.model.*;
 import com.wordnik.swagger.reader.ClassReaders;
 import com.wordnik.swagger.sample.util.ApiAuthorizationFilterImpl;
 import com.wordnik.swagger.sample.util.ApiOriginFilter;
@@ -82,8 +77,10 @@ public class SwaggerExampleGuiceContextListener extends GuiceServletContextListe
                 "http://www.apache.org/licenses/LICENSE-2.0.html" /* license URL */
         );
 
-        List<String> scopes = new ArrayList<String>();
-        scopes.add("PUBLIC");
+        List<AuthorizationScope> scopes = new ArrayList<AuthorizationScope>();
+        scopes.add(new AuthorizationScope("email", "Access to your email address"));
+        scopes.add(new AuthorizationScope("pets", "Access to your pets"));
+
 
         List<GrantType> grantTypes = new ArrayList<GrantType>();
 
